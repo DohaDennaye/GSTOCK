@@ -13,7 +13,22 @@ if (session_status() === PHP_SESSION_NONE) {
     <!-- Boxicons CDN Link -->
     <link href="https://unpkg.com/boxicons@2.0.7/css/boxicons.min.css" rel="stylesheet" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
+<style>
+    .sidebar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 260px;
+        height: 100vh;
+        transition: all 0.4s ease;
+    }
+
+    .sidebar.active {
+        left: -260px;
+    }
+</style>
 
 <body>
     <div class="sidebar">
@@ -47,7 +62,7 @@ if (session_status() === PHP_SESSION_NONE) {
                 </a>
             </li>
             <li>
-                <a href="#">
+                <a href="commande.php">
                     <i class="bx bx-list-ul"></i>
                     <span class="links_name">Commandes</span>
                 </a>
@@ -62,12 +77,6 @@ if (session_status() === PHP_SESSION_NONE) {
                 <a href="#">
                     <i class="bx bx-coin-stack"></i>
                     <span class="links_name">Stock</span>
-                </a>
-            </li>
-            <li>
-                <a href="#">
-                    <i class="bx bx-book-alt"></i>
-                    <span class="links_name">Tout les commmandes</span>
                 </a>
             </li>
             <li>
@@ -88,14 +97,8 @@ if (session_status() === PHP_SESSION_NONE) {
             <span class="links_name">Favrorites</span>
           </a>
         </li> -->
-            <li>
-                <a href="#">
-                    <i class="bx bx-cog"></i>
-                    <span class="links_name">Configuration</span>
-                </a>
-            </li>
             <li class="log_out">
-                <a href="#">
+                <a href="../logout.php">
                     <i class="bx bx-log-out"></i>
                     <span class="links_name">Déconnexion</span>
                 </a>
@@ -118,3 +121,4 @@ if (session_status() === PHP_SESSION_NONE) {
                 <i class="bx bx-chevron-down"></i>
             </div>
         </nav>
+    </section>

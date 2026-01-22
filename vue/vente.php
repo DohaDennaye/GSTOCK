@@ -1,108 +1,176 @@
 <?php
 include 'entete.php';
-include '../model/connexion.php';
+require_once __DIR__ . '/../models/Client.php';
+require_once __DIR__ . '/../models/Vente.php';
+require_once __DIR__ . '/../models/Article.php';
 
-// ventes (pour le tableau)
-$sqlVentes = "SELECT * FROM vente ORDER BY id DESC";
-$resultVentes = $conn->query($sqlVentes);
+// ---------------------
+// EDIT VENTE
+// ---------------------
+$venteEdit = null;
+if (isset($_GET['edit'])) {
+    $ventes = Vente::getAll();
+    foreach ($ventes as $v) {
+        if ($v['id'] == $_GET['edit']) {
+            $venteEdit = $v;
+            break;
+        }
+    }
+}
 
-// ventes (pour le select)
-$sqlVentesSelect = "SELECT * FROM vente ORDER BY id DESC";
-$resultVentesSelect = $conn->query($sqlVentesSelect);
+// ---------------------
+// AJOUT VENTE
+// ---------------------
+if (isset($_POST['add'])) {
+    // Récupérer le prix unitaire de l'article sélectionné
+    $article = Article::getAll();
+    $prix_unitaire = 0;
+    foreach ($article as $a) {
+        if ($a['id'] == $_POST['id_article']) {
+            $prix_unitaire = $a['prix_unitaire'];
+            break;
+        }
+    }
+    $_POST['prix'] = $_POST['quantite'] * $prix_unitaire;
 
+    if (Vente::create($_POST)) {
+        $_SESSION['success'] = "Vente ajoutée avec succès !";
+    } else {
+        $_SESSION['error'] = "Erreur lors de l'ajout de la vente.";
+    }
+    header("Location: vente.php");
+    exit;
+}
+
+// ---------------------
+// MODIFIER VENTE
+// ---------------------
+if (isset($_POST['update'])) {
+    $id = $_POST['id'];
+    $article = Article::getAll();
+    $prix_unitaire = 0;
+    foreach ($article as $a) {
+        if ($a['id'] == $_POST['id_article']) {
+            $prix_unitaire = $a['prix_unitaire'];
+            break;
+        }
+    }
+    $_POST['prix'] = $_POST['quantite'] * $prix_unitaire;
+
+    if (Vente::update($id, $_POST)) {
+        $_SESSION['success'] = "Vente modifiée avec succès !";
+    } else {
+        $_SESSION['error'] = "Erreur lors de la modification de la vente.";
+    }
+    header("Location: vente.php");
+    exit;
+}
+
+// ---------------------
+// SUPPRIMER VENTE
+// ---------------------
+if (isset($_GET['delete'])) {
+    if (Vente::delete($_GET['delete'])) {
+        $_SESSION['success'] = "Vente supprimée !";
+    } else {
+        $_SESSION['error'] = "Erreur lors de la suppression.";
+    }
+    header("Location: vente.php");
+    exit;
+}
+
+// ---------------------
+// LISTE VENTES
+// ---------------------
+$ventes = Vente::getAll();
+$articles = Article::getAll();
+$clients = Client::getAll();
 ?>
 
 <div class="home-content">
-    <h2>Ajouter un nouvel article</h2></br>
+    <h2><?= $venteEdit ? "Modifier une vente" : "Ajouter une vente" ?></h2><br>
+
     <div class="overview-boxes">
         <div class="box">
-            <!-- Messages session -->
             <?php
-            if (isset($_SESSION['success'])) {
-                echo '<p style="color:green">' . $_SESSION['success'] . '</p>';
+            if(isset($_SESSION['success'])){
+                echo '<p style="color:green">'.$_SESSION['success'].'</p>';
                 unset($_SESSION['success']);
             }
-            if (isset($_SESSION['error'])) {
-                echo '<p style="color:red">' . $_SESSION['error'] . '</p>';
+            if(isset($_SESSION['error'])){
+                echo '<p style="color:red">'.$_SESSION['error'].'</p>';
                 unset($_SESSION['error']);
             }
             ?>
-            <!-- Formulaire d'ajout -->
-            <form action="../model/<?= isset($_GET['id']) ? 'modifierArticle.php' : 'ajouterArticle.php' ?>" method="POST" class="form-article">
-                <input type="text" id="<?= $_GET['id'] ?>" name="nom-article" placeholder="Nom de l'article" required />
 
-                <label for="id_article">Article</label>
-                <select name="id_article" id="id_article" required>
+            <form method="post">
+                <?php if($venteEdit): ?>
+                    <input type="hidden" name="id" value="<?= $venteEdit['id'] ?>">
+                <?php endif; ?>
 
-                    <option value="">-- Choisir un article --</option>
-
-                    <?php if ($resultVentesSelect && $resultVentesSelect->num_rows > 0): ?>
-                        <?php while ($row = $resultVentesSelect->fetch_assoc()): ?>
-                            <option value="<?= $row['id'] ?>">
-                                <?= htmlspecialchars($row['nom_article']) ?>
-                            </option>
-                        <?php endwhile; ?>
-                    <?php else: ?>
-                        <option disabled>Aucun article trouvé</option>
-                    <?php endif; ?>
-
+                <label>Client</label>
+                <select name="id_client" required>
+                    <option value="">--Choisir un client--</option>
+                    <?php foreach($clients as $c): ?>
+                        <option value="<?= $c['id'] ?>" <?= $venteEdit && $venteEdit['id_client']==$c['id'] ? 'selected' : '' ?>>
+                            <?= htmlspecialchars($c['nom'].' '.$c['prenom']) ?>
+                        </option>
+                    <?php endforeach; ?>
                 </select>
 
+                <label>Article</label>
+                <select name="id_article" required>
+                    <option value="">--Choisir un article--</option>
+                    <?php foreach($articles as $a): ?>
+                        <option value="<?= $a['id'] ?>" <?= $venteEdit && $venteEdit['id_article']==$a['id'] ? 'selected' : '' ?>>
+                            <?= htmlspecialchars($a['nom_article']) ?> (Prix unitaire: <?= $a['prix_unitaire'] ?>)
+                        </option>
+                    <?php endforeach; ?>
+                </select>
 
-                <label for="quantite">Quantité</label>
-                <input type="number" id="quantite" name="quantite" placeholder="Quantité" required />
+                <label>Quantité</label>
+                <input type="number" name="quantite" value="<?= $venteEdit['quantite'] ?? '' ?>" placeholder="Quantité" required>
 
-                <label for="prix_unitaire">Prix unitaire</label>
-                <input type="number" id="prix_unitaire" name="prix_unitaire" placeholder="Prix unitaire" step="0.01" required />
-
-                <label for="date_fabrication">Date de fabrication</label>
-                <input type="datetime-local" id="date_fabrication" name="date_fabrication" required />
-
-                <label for="date_expiration">Date d'expiration</label>
-                <input type="datetime-local" id="date_expiration" name="date_expiration" required />
-
-                <button type="submit" class="btn btn-primary">Ajouter l'article</button>
+                <button type="submit" name="<?= $venteEdit ? 'update' : 'add' ?>">
+                    <?= $venteEdit ? 'Modifier' : 'Ajouter' ?>
+                </button>
             </form>
         </div>
     </div>
 
-    <h2>Liste des articles</h2>
-    <table border="1" class="table-articles" cellpadding="10" cellspacing="0">
+    <h2>Liste des ventes</h2>
+    <table border="1" cellpadding="10" cellspacing="0">
         <tr>
             <th>ID</th>
-            <th>Nom</th>
-            <th>Catégorie</th>
+            <th>Article</th>
+            <th>Client</th>
             <th>Quantité</th>
             <th>Prix unitaire</th>
-            <th>Date fabrication</th>
-            <th>Date expiration</th>
+            <th>Prix total</th>
+            <th>Date vente</th>
             <th>Actions</th>
         </tr>
-        <?php if ($resultVentes && $resultVentes->num_rows > 0): ?>
-            <?php while ($row = $resultVentes->fetch_assoc()): ?>
+        <?php if($ventes): ?>
+            <?php foreach($ventes as $v): ?>
                 <tr>
-                    <td><?= $row['id'] ?></td>
-                    <td><?= htmlspecialchars($row['nom_article']) ?></td>
-                    <td><?= htmlspecialchars($row['categorie']) ?></td>
-                    <td><?= $row['quantite'] ?></td>
-                    <td><?= $row['prix_unitaire'] ?></td>
-                    <td><?= $row['date_fabrication'] ?></td>
-                    <td><?= $row['date_expiration'] ?></td>
+                    <td><?= $v['id'] ?></td>
+                    <td><?= htmlspecialchars($v['nom_article']) ?></td>
+                    <td><?= htmlspecialchars($v['client_nom'].' '.$v['client_prenom']) ?></td>
+                    <td><?= $v['quantite'] ?></td>
+                    <td><?= $v['prix'] / $v['quantite'] ?></td>
+                    <td><?= $v['prix'] ?></td>
+                    <td><?= $v['date_vente'] ?></td>
                     <td>
-                        <a href="../model/modifierArticle.php?id=<?= $row['id'] ?>" class="edit"> Modifier</a>
-                        <a href="../model/supprimerArticle.php?id=<?= $row['id'] ?>" class="delete" onclick="return confirm('Supprimer cet article ?')">Supprimer</a>
+                        <a href="vente.php?edit=<?= $v['id'] ?>">✏️ Modifier</a>
+                        <a href="vente.php?delete=<?= $v['id'] ?>" onclick="return confirm('Supprimer cette vente ?')">🗑️ Supprimer</a>
                     </td>
                 </tr>
-            <?php endwhile; ?>
+            <?php endforeach; ?>
         <?php else: ?>
             <tr>
-                <td colspan="8">Aucun article trouvé</td>
+                <td colspan="8">Aucune vente trouvée</td>
             </tr>
         <?php endif; ?>
     </table>
+    <?php include 'pied.php'; ?>
 </div>
-
-<?php
-$conn->close();
-include 'pied.php';
-?>

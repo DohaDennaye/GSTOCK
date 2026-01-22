@@ -1,175 +1,214 @@
 <?php
+require_once __DIR__ . '/../config/database.php';
 include 'entete.php';
+
+/* ===========================
+   KPI PRINCIPAUX
+=========================== */
+$nbCommandes = $pdo->query("SELECT COUNT(*) FROM commande")->fetchColumn();
+$nbVentes    = $pdo->query("SELECT COUNT(*) FROM vente")->fetchColumn();
+
+$revenu = $pdo->query("
+    SELECT IFNULL(SUM(prix * quantite),0)
+    FROM vente
+")->fetchColumn();
+
+$profit = $revenu * 0.20; // 20% exemple
+
+/* ===========================
+   VENTES RÉCENTES
+=========================== */
+$ventesRecentes = $pdo->query("
+    SELECT 
+        v.date_vente,
+        c.nom AS client,
+        a.nom_article AS produit,
+        (v.prix * v.quantite) AS total
+    FROM vente v
+    JOIN client c ON v.id_client = c.id
+    JOIN article a ON v.id_article = a.id
+    ORDER BY v.date_vente DESC
+    LIMIT 5
+")->fetchAll(PDO::FETCH_ASSOC);
+
+/* ===========================
+   AUJOURD’HUI vs HIER
+=========================== */
+$venteToday = $pdo->query("
+    SELECT IFNULL(SUM(prix * quantite),0)
+    FROM vente
+    WHERE DATE(date_vente) = CURDATE()
+")->fetchColumn();
+
+$venteYesterday = $pdo->query("
+    SELECT IFNULL(SUM(prix * quantite),0)
+    FROM vente
+    WHERE DATE(date_vente) = CURDATE() - INTERVAL 1 DAY
+")->fetchColumn();
+
+$evolution = 0;
+if ($venteYesterday > 0) {
+    $evolution = (($venteToday - $venteYesterday) / $venteYesterday) * 100;
+}
+
+/* ===========================
+   GRAPHE 7 JOURS
+=========================== */
+$stats = $pdo->query("
+    SELECT DATE(date_vente) AS jour,
+           SUM(prix * quantite) AS total
+    FROM vente
+    WHERE date_vente >= CURDATE() - INTERVAL 6 DAY
+    GROUP BY jour
+    ORDER BY jour
+")->fetchAll(PDO::FETCH_ASSOC);
+
+$labels = array_column($stats, 'jour');
+$data   = array_column($stats, 'total');
+
+/* ===========================
+   TOP PRODUITS
+=========================== */
+$topProduits = $pdo->query("
+    SELECT a.nom_article, SUM(v.quantite) AS qte
+    FROM vente v
+    JOIN article a ON v.id_article = a.id
+    GROUP BY a.nom_article
+    ORDER BY qte DESC
+    LIMIT 5
+")->fetchAll(PDO::FETCH_ASSOC);
+
+$pLabels = array_column($topProduits, 'nom_article');
+$pData   = array_column($topProduits, 'qte');
 ?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <link rel="stylesheet" href="../public/css/style.css" />
+</head>
 <section class="home-section">
-  <div class="home-content">
-    <div class="overview-boxes">
-      <div class="box">
-        <div class="right-side">
-          <div class="box-topic">Commande</div>
-          <div class="number">40,876</div>
-          <div class="indicator">
-            <i class="bx bx-up-arrow-alt"></i>
-            <span class="text">Depuis hier</span>
-          </div>
-        </div>
-        <i class="bx bx-cart-alt cart"></i>
-      </div>
-      <div class="box">
-        <div class="right-side">
-          <div class="box-topic">Vente</div>
-          <div class="number">38,876</div>
-          <div class="indicator">
-            <i class="bx bx-up-arrow-alt"></i>
-            <span class="text">Depuis hier</span>
-          </div>
-        </div>
-        <i class="bx bxs-cart-add cart two"></i>
-      </div>
-      <div class="box">
-        <div class="right-side">
-          <div class="box-topic">Profit</div>
-          <div class="number">120,876 </div>
-          <div class="indicator">
-            <i class="bx bx-up-arrow-alt"></i>
-            <span class="text">Depuis hier</span>
-          </div>
-        </div>
-        <i class="bx bx-cart cart three"></i>
-      </div>
-      <div class="box">
-        <div class="right-side">
-          <div class="box-topic">Revenu</div>
-          <div class="number">11,086</div>
-          <div class="indicator">
-            <i class="bx bx-down-arrow-alt down"></i>
-            <span class="text">Aujourd'hui</span>
-          </div>
-        </div>
-        <i class="bx bxs-cart-download cart four"></i>
-      </div>
+<div class="home-content">
+
+<!-- ================= KPI ================= -->
+<div class="overview-boxes">
+
+  <div class="box">
+    <div class="right-side">
+      <div class="box-topic">Commandes</div>
+      <div class="number"><?= $nbCommandes ?></div>
     </div>
+    <i class="bx bx-cart-alt cart"></i>
+  </div>
 
-    <div class="sales-boxes">
-      <div class="recent-sales box">
-        <div class="title">Vente recentes</div>
-        <div class="sales-details">
-          <ul class="details">
-            <li class="topic">Date</li>
-            <li><a href="#">02 Jan 2021</a></li>
-            <li><a href="#">02 Jan 2021</a></li>
-            <li><a href="#">02 Jan 2021</a></li>
-            <li><a href="#">02 Jan 2021</a></li>
-            <li><a href="#">02 Jan 2021</a></li>
-            <li><a href="#">02 Jan 2021</a></li>
-            <li><a href="#">02 Jan 2021</a></li>
-          </ul>
-          <ul class="details">
-            <li class="topic">Client</li>
-            <li><a href="#">Abdoul Razak</a></li>
-            <li><a href="#">Abdel Nasser</a></li>
-            <li><a href="#">Maman Sani</a></li>
-            <li><a href="#">Narouwa</a></li>
-            <li><a href="#">Ishaka</a></li>
-            <li><a href="#">Abdoullah</a></li>
-            <li><a href="#">Adam</a></li>
-            <li><a href="#">Komche</a></li>
-            <li><a href="#">Adamou</a></li>
-          </ul>
-          <ul class="details">
-            <li class="topic">Produit</li>
-            <li><a href="#">Ordinateur</a></li>
-            <li><a href="#">iPhone</a></li>
-            <li><a href="#">Returned</a></li>
-            <li><a href="#">Ordinateur</a></li>
-            <li><a href="#">iPhone</a></li>
-            <li><a href="#">Returned</a></li>
-            <li><a href="#">Ordinateur</a></li>
-            <li><a href="#">iPhone</a></li>
-            <li><a href="#">Ordinateur</a></li>
-          </ul>
-          <ul class="details">
-            <li class="topic">Prix</li>
-            <li><a href="#">2040.98 DH</a></li>
-            <li><a href="#">240.55 DH</a></li>
-            <li><a href="#">250.88 DH</a></li>
-            <li><a href="#">1700.66 DH</a></li>
-            <li><a href="#">560.56 DH</a></li>
-            <li><a href="#">440.95 DH</a></li>
-            <li><a href="#">670.33 DH</a></li>
-            <li><a href="#">230.53 DH</a></li>
-            <li><a href="#">460.52 DH</a></li>
-          </ul>
-        </div>
-        <div class="button">
-          <a href="#">Voir Tout</a>
-        </div>
-      </div>
-      <div class="top-sales box">
-        <div class="title">Produit le plus vendu</div>
-        <ul class="top-sales-details">
-          <li>
-            <a href="#">
-              <!--<img src="images/sunglasses.jpg" alt="">-->
-              <span class="product">Ordinateur</span>
-            </a>
-            <span class="price">1107 DH</span>
-          </li>
-          <li>
-            <a href="#">
-              <!--<img src="images/jeans.jpg" alt="">-->
-              <span class="product">PC</span>
-            </a>
-            <span class="price">1567 DH</span>
-          </li>
-          <li>
-            <a href="#">
-              <!-- <img src="images/nike.jpg" alt="">-->
-              <span class="product">Chaussure</span>
-            </a>
-            <span class="price">1234 DH</span>
-          </li>
-          <li>
-            <a href="#">
-              <!--<img src="images/scarves.jpg" alt="">-->
-              <span class="product">Pantalon</span>
-            </a>
-            <span class="price">2312 DH</span>
-          </li>
-          <li>
-            <a href="#">
-              <!--<img src="images/blueBag.jpg" alt="">-->
-              <span class="product">Samsung</span>
-            </a>
-            <span class="price">1456 DH</span>
-          </li>
-          <li>
-            <a href="#">
-              <!--<img src="images/bag.jpg" alt="">-->
-              <span class="product">iPhone</span>
-            </a>
-            <span class="price">2345 DH</span>
-          </li>
+  <div class="box">
+    <div class="right-side">
+      <div class="box-topic">Ventes</div>
+      <div class="number"><?= $nbVentes ?></div>
+    </div>
+    <i class="bx bxs-cart-add cart two"></i>
+  </div>
 
-          <li>
-            <a href="#">
-              <!--<img src="images/addidas.jpg" alt="">-->
-              <span class="product">iPhone X</span>
-            </a>
-            <span class="price">2345 DH</span>
-          </li>
-          <li>
-            <a href="#">
-              <!--<img src="images/shirt.jpg" alt="">-->
-              <span class="product">TShirt</span>
-            </a>
-            <span class="price">1245 DH</span>
-          </li>
-        </ul>
-      </div>
+  <div class="box">
+    <div class="right-side">
+      <div class="box-topic">Revenu</div>
+      <div class="number"><?= number_format($revenu,2) ?> DH</div>
+    </div>
+    <i class="bx bx-money cart three"></i>
+  </div>
+
+  <div class="box">
+    <div class="right-side">
+      <div class="box-topic">Profit</div>
+      <div class="number"><?= number_format($profit,2) ?> DH</div>
+    </div>
+    <i class="bx bx-trending-up cart four"></i>
+  </div>
+
+</div>
+
+<!-- ================= COMPARAISON ================= -->
+<div class="box">
+  <div class="right-side">
+    <div class="box-topic">Revenu aujourd'hui</div>
+    <div class="number"><?= number_format($venteToday,2) ?> DH</div>
+    <div class="indicator">
+      <?php if ($evolution >= 0): ?>
+        <i class="bx bx-up-arrow-alt"></i>
+        <span class="text">+<?= number_format($evolution,1) ?> % vs hier</span>
+      <?php else: ?>
+        <i class="bx bx-down-arrow-alt down"></i>
+        <span class="text"><?= number_format($evolution,1) ?> % vs hier</span>
+      <?php endif; ?>
     </div>
   </div>
+</div>
+
+<!-- ================= GRAPHES ================= -->
+<div class="sales-boxes">
+  <div class="box">
+    <h3>Ventes - 7 derniers jours</h3>
+    <canvas id="venteChart"></canvas>
+  </div>
+
+  <div class="box">
+    <h3>Top produits vendus</h3>
+    <canvas id="produitChart"></canvas>
+  </div>
+</div>
+
+<!-- ================= TABLE ================= -->
+<div class="recent-sales box">
+<h3>Ventes récentes</h3>
+<table>
+<tr>
+  <th>Date</th>
+  <th>Client</th>
+  <th>Produit</th>
+  <th>Total (DH)</th>
+</tr>
+
+<?php foreach ($ventesRecentes as $v): ?>
+<tr>
+  <td><?= $v['date_vente'] ?></td>
+  <td><?= $v['client'] ?></td>
+  <td><?= $v['produit'] ?></td>
+  <td><?= number_format($v['total'],2) ?></td>
+</tr>
+<?php endforeach; ?>
+
+</table>
+</div>
+
+</div>
 </section>
-<?php
-include 'pied.php';
-?>
+
+<script>
+new Chart(document.getElementById('venteChart'), {
+  type: 'line',
+  data: {
+    labels: <?= json_encode($labels) ?>,
+    datasets: [{
+      label: 'Ventes (DH)',
+      data: <?= json_encode($data) ?>,
+      borderWidth: 2,
+      fill: true
+    }]
+  },
+  options: { responsive: true }
+});
+
+new Chart(document.getElementById('produitChart'), {
+  type: 'bar',
+  data: {
+    labels: <?= json_encode($pLabels) ?>,
+    datasets: [{
+      label: 'Quantité vendue',
+      data: <?= json_encode($pData) ?>
+    }]
+  }
+});
+</script>
+
+<?php include 'pied.php'; ?>
