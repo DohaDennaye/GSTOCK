@@ -2,127 +2,232 @@
 include 'entete.php';
 require_once __DIR__ . '/../models/Fournisseur.php';
 
-// 🔹 AJOUT FOURNISSEUR
-if (isset($_POST['add'])) {
-    if(Fournisseur::create($_POST)) {
-        $_SESSION['success'] = "Fournisseur ajouté avec succès !";
-    } else {
-        $_SESSION['error'] = "Erreur lors de l'ajout du fournisseur.";
+/* ========= ACTIONS ========= */
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+
+    if (isset($_POST['add'])) {
+        Fournisseur::create($_POST);
+        $_SESSION['success'] = "Fournisseur ajouté avec succès";
     }
+
+    if (isset($_POST['update'])) {
+        Fournisseur::update($_POST['id'], $_POST);
+        $_SESSION['success'] = "Fournisseur modifié avec succès";
+    }
+
     header("Location: fournisseur.php");
     exit;
 }
 
-// 🔹 MODIFICATION FOURNISSEUR
-if (isset($_POST['update'])) {
-    $id = $_POST['id'];
-    if(Fournisseur::update($id, $_POST)) {
-        $_SESSION['success'] = "Fournisseur modifié avec succès !";
-    } else {
-        $_SESSION['error'] = "Erreur lors de la modification du fournisseur.";
-    }
-    header("Location: fournisseur.php");
-    exit;
-}
-
-// 🔹 SUPPRESSION FOURNISSEUR
 if (isset($_GET['delete'])) {
-    $id = $_GET['delete'];
-    if(Fournisseur::delete($id)) {
-        $_SESSION['success'] = "Fournisseur supprimé !";
-    } else {
-        $_SESSION['error'] = "Erreur lors de la suppression du fournisseur.";
-    }
+    Fournisseur::delete($_GET['delete']);
+    $_SESSION['success'] = "Fournisseur supprimé";
     header("Location: fournisseur.php");
     exit;
 }
 
-// 🔹 RÉCUPÉRER FOURNISSEUR POUR EDIT
-$fournisseurEdit = null;
-if (isset($_GET['edit'])) {
-    $fournisseurEdit = Fournisseur::getById($_GET['edit']);
-}
+/* ========= EDIT ========= */
+$fournisseurEdit = isset($_GET['edit'])
+    ? Fournisseur::getById($_GET['edit'])
+    : null;
 
-// 🔹 LISTE DES FOURNISSEURS
 $fournisseurs = Fournisseur::getAll();
 ?>
 
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <title>Gestion des fournisseurs</title>
-</head>
-<body>
+<style>
+    /* ===== CONTENEUR ===== */
+    .home-content {
+        padding: 25px;
+        margin-top: 70px;
+        background: #f5f7fb;
+        min-height: calc(100vh - 70px);
+    }
 
-<h2><?= $fournisseurEdit ? "Modifier le fournisseur" : "Ajouter un fournisseur" ?></h2>
+    /* ===== CARD ===== */
+    .card {
+        background: #fff;
+        padding: 22px;
+        border-radius: 10px;
+        margin-bottom: 25px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, .08);
+    }
 
-<?php
-if(isset($_SESSION['success'])){
-    echo '<p style="color:green">'.$_SESSION['success'].'</p>';
-    unset($_SESSION['success']);
-}
-if(isset($_SESSION['error'])){
-    echo '<p style="color:red">'.$_SESSION['error'].'</p>';
-    unset($_SESSION['error']);
-}
-?>
+    /* ===== FORM ===== */
+    .form-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 15px;
+    }
 
-<form method="post">
-    <?php if ($fournisseurEdit): ?>
-        <input type="hidden" name="id" value="<?= $fournisseurEdit['id'] ?>">
+    .form-grid label {
+        font-size: 14px;
+        color: #475569;
+    }
+
+    .form-grid input {
+        padding: 8px;
+        border-radius: 6px;
+        border: 1px solid #cbd5e1;
+    }
+
+    .form-grid input:focus {
+        outline: none;
+        border-color: #2563eb;
+    }
+
+    .form-actions {
+        grid-column: 1/-1;
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+    }
+
+    button {
+        background: #0f172a;
+        color: #fff;
+        padding: 10px 22px;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+    }
+
+    .btn-cancel {
+        background: #e5e7eb;
+        color: #111827;
+        padding: 10px 18px;
+        border-radius: 8px;
+        text-decoration: none;
+    }
+
+    /* ===== TABLE ===== */
+    .table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .table th {
+        background: #11101d;
+        padding: 12px;
+        text-align: left;
+    }
+
+    .table td {
+        padding: 10px;
+        border-bottom: 1px solid #dddddd;
+    }
+
+    /* ===== ALERT ===== */
+    .alert {
+        padding: 12px;
+        margin-bottom: 15px;
+        border-radius: 8px;
+    }
+
+    .alert.success {
+        background: #d4edda;
+        color: #155724;
+    }
+
+    /* ===== ACTIONS ===== */
+    .edit {
+        color: #2563eb;
+        margin-right: 10px;
+        text-decoration: none
+    }
+
+    .delete {
+        color: #dc2626;
+        text-decoration: none
+    }
+
+    /* ===== RESPONSIVE ===== */
+    @media(max-width:768px) {
+        .form-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+
+<div class="home-content">
+
+    <h2>Gestion des fournisseurs</h2><br />
+
+    <?php if (isset($_SESSION['success'])): ?>
+        <div class="alert success">
+            <?= $_SESSION['success'];
+            unset($_SESSION['success']); ?>
+        </div>
     <?php endif; ?>
 
-    <input type="text" name="nom" placeholder="Nom"
-           value="<?= $fournisseurEdit['nom'] ?? '' ?>" required><br><br>
+    <!-- FORM -->
+    <div class="card">
+        <h3><?= $fournisseurEdit ? " Modifier le fournisseur" : " Ajouter un fournisseur" ?></h3><br>
 
-    <input type="text" name="prenom" placeholder="Prénom"
-           value="<?= $fournisseurEdit['prenom'] ?? '' ?>" required><br><br>
+        <form method="post" class="form-article">
 
-    <input type="text" name="telephone" placeholder="Téléphone"
-           value="<?= $fournisseurEdit['telephone'] ?? '' ?>" required><br><br>
+            <?php if ($fournisseurEdit): ?>
+                <input type="hidden" name="id" value="<?= $fournisseurEdit['id'] ?>">
+            <?php endif; ?>
 
-    <input type="text" name="adresse" placeholder="Adresse"
-           value="<?= $fournisseurEdit['adresse'] ?? '' ?>" required><br><br>
+            <div>
+                <label>Nom</label><br />
+                <input type="text" name="nom" required value="<?= $fournisseurEdit['nom'] ?? '' ?>">
+            </div>
 
-    <button type="submit" name="<?= $fournisseurEdit ? 'update' : 'add' ?>">
-        <?= $fournisseurEdit ? 'Modifier' : 'Ajouter' ?>
-    </button>
-</form>
+            <div>
+                <label>Prénom</label><br />
+                <input type="text" name="prenom" required value="<?= $fournisseurEdit['prenom'] ?? '' ?>">
+            </div>
 
-<hr>
+            <div>
+                <label>Téléphone</label><br />
+                <input type="text" name="telephone" required value="<?= $fournisseurEdit['telephone'] ?? '' ?>">
+            </div>
 
-<h2>Liste des fournisseurs</h2>
+            <div>
+                <label>Adresse</label><br />
+                <input type="text" name="adresse" required value="<?= $fournisseurEdit['adresse'] ?? '' ?>">
+            </div>
 
-<table border="1" cellpadding="8">
-    <tr>
-        <th>Nom</th>
-        <th>Prénom</th>
-        <th>Téléphone</th>
-        <th>Adresse</th>
-        <th>Actions</th>
-    </tr>
+            <div class="form-actions">
+                <button type="submit" name="<?= $fournisseurEdit ? 'update' : 'add' ?>">
+                    <?= $fournisseurEdit ? 'Mettre à jour' : 'Ajouter' ?>
+                </button>
 
-    <?php if($fournisseurs): ?>
-        <?php foreach ($fournisseurs as $f): ?>
+                <?php if ($fournisseurEdit): ?>
+                    <a href="fournisseur.php" class="btn-cancel">Annuler</a>
+                <?php endif; ?>
+            </div>
+        </form>
+    </div>
+
+    <!-- TABLE -->
+    <div class="card">
+        <h3> Liste des fournisseurs</h3>
+
+        <table class="table">
             <tr>
-                <td><?= htmlspecialchars($f['nom']) ?></td>
-                <td><?= htmlspecialchars($f['prenom']) ?></td>
-                <td><?= htmlspecialchars($f['telephone']) ?></td>
-                <td><?= htmlspecialchars($f['adresse']) ?></td>
-                <td>
-                    <a href="fournisseur.php?edit=<?= $f['id'] ?>">✏️</a>
-                    <a href="fournisseur.php?delete=<?= $f['id'] ?>" 
-                       onclick="return confirm('Supprimer ce fournisseur ?')">🗑️</a>
-                </td>
+                <th>Nom</th>
+                <th>Prénom</th>
+                <th>Téléphone</th>
+                <th>Adresse</th>
+                <th width="120">Actions</th>
             </tr>
-        <?php endforeach; ?>
-    <?php else: ?>
-        <tr>
-            <td colspan="5">Aucun fournisseur trouvé</td>
-        </tr>
-    <?php endif; ?>
-</table>
-<?php include 'pied.php'; ?>
-</body>
-</html>
+
+            <?php foreach ($fournisseurs as $f): ?>
+                <tr>
+                    <td><?= htmlspecialchars($f['nom']) ?></td>
+                    <td><?= htmlspecialchars($f['prenom']) ?></td>
+                    <td><?= htmlspecialchars($f['telephone']) ?></td>
+                    <td><?= htmlspecialchars($f['adresse']) ?></td>
+                    <td>
+                        <a class="edit" href="?edit=<?= $f['id'] ?>">✏️</a>
+                        <a class="delete" href="?delete=<?= $f['id'] ?>" onclick="return confirm('Supprimer ce fournisseur ?')">🗑️</a>
+                    </td>
+                </tr>
+            <?php endforeach; ?>
+        </table>
+    </div>
+
+    <?php include 'pied.php'; ?>
+</div>

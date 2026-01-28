@@ -3,6 +3,10 @@ require_once __DIR__ . '/../config/database.php';
 
 class Article {
 
+    /* =======================
+       CRUD BASIQUE
+    ======================= */
+
     public static function getAll() {
         global $pdo;
         return $pdo->query("SELECT * FROM article ORDER BY id DESC")->fetchAll();
@@ -17,16 +21,16 @@ class Article {
 
     public static function create($data) {
         global $pdo;
+
         if (empty($data['nom_article'])) {
             throw new Exception("Le nom de l'article est obligatoire");
         }
 
-        $sql = "INSERT INTO article 
-        (nom_article, categorie, quantite, prix_unitaire, date_fabrication, date_expiration)
-        VALUES (?,?,?,?,?,?)";
+        $sql = "INSERT INTO article
+            (nom_article, categorie, quantite, prix_unitaire, date_fabrication, date_expiration)
+            VALUES (?,?,?,?,?,?)";
 
-        $stmt = $pdo->prepare($sql);
-        return $stmt->execute([
+        return $pdo->prepare($sql)->execute([
             $data['nom_article'],
             $data['categorie'],
             $data['quantite'],
@@ -38,9 +42,10 @@ class Article {
 
     public static function update($id, $data) {
         global $pdo;
-        $sql = "UPDATE article 
-                SET nom_article=?, categorie=?, quantite=?, prix_unitaire=?, 
-                    date_fabrication=?, date_expiration=? 
+
+        $sql = "UPDATE article
+                SET nom_article=?, categorie=?, quantite=?, prix_unitaire=?,
+                    date_fabrication=?, date_expiration=?
                 WHERE id=?";
 
         return $pdo->prepare($sql)->execute([
@@ -59,17 +64,41 @@ class Article {
         return $pdo->prepare("DELETE FROM article WHERE id=?")->execute([$id]);
     }
 
-    public static function decrementStock($id_article, $quantite) {
+    /* =======================
+       GESTION DE STOCK
+    ======================= */
+
+    // 🔍 Stock actuel
+    public static function getStock($id_article) {
         global $pdo;
-        $sql = "UPDATE article 
-                SET quantite = quantite - ? 
-                WHERE id = ?";
-        return $pdo->prepare($sql)->execute([$quantite, $id_article]);
+        $stmt = $pdo->prepare("SELECT quantite FROM article WHERE id=?");
+        $stmt->execute([$id_article]);
+        return (int) $stmt->fetchColumn();
     }
 
-    public static function rupture() {
+    // ⬇️ Diminuer stock (vente)
+    public static function decreaseStock($id_article, $quantite) {
         global $pdo;
-        return $pdo->query("SELECT * FROM article WHERE quantite <= 5")->fetchAll();
+
+        $sql = "
+            UPDATE article
+            SET quantite = quantite - ?
+            WHERE id = ? AND quantite >= ?
+        ";
+
+        return $pdo->prepare($sql)->execute([
+            $quantite,
+            $id_article,
+            $quantite
+        ]);
+    }
+
+    // ⚠️ Articles en rupture ou stock faible
+    public static function rupture($seuil = 5) {
+        global $pdo;
+        $stmt = $pdo->prepare("SELECT * FROM article WHERE quantite <= ?");
+        $stmt->execute([$seuil]);
+        return $stmt->fetchAll();
     }
 }
 ?>

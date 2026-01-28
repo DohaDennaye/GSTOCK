@@ -2,9 +2,9 @@
 session_start();
 require_once __DIR__ . '/config/database.php';
 
-// Si déjà connecté → redirige vers la page principale (ex: article.php)
+// Si déjà connecté → redirection
 if (isset($_SESSION['user'])) {
-    header("Location: vue/dashboard.php"); // ← modifie ici selon ta vue principale
+    header("Location: vue/dashboard.php");
     exit;
 }
 
@@ -13,39 +13,31 @@ $error = "";
 // Traitement du formulaire
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
-    $username = trim($_POST['username']) ?? '';
-    $password = $_POST['password'] ?? '';
+    $username = trim($_POST['username']);
+    $password = $_POST['password'];
 
-    // 🔐 Identifiants temporaires (à remplacer plus tard par DB)
-$stmt = $pdo->prepare("SELECT * FROM utilisateur WHERE username = ?");
-$stmt->execute([$username]);
-$user = $stmt->fetch();
+    // Récupérer l'utilisateur depuis la DB
+    $stmt = $pdo->prepare("SELECT * FROM utilisateur WHERE username = ?");
+    $stmt->execute([$username]);
+    $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
-if ($user && password_verify($password, $user['password'])) {
+    // Vérification mot de passe
+    if ($user && password_verify($password, $user['password'])) {
 
-    $_SESSION['user'] = [
-        'id' => $user['id'],
-        'username' => $user['username'],
-        'role' => $user['role']
-    ];
-
-    header("Location: vue/dashboard.php");
-    exit;
-} else {
-    $error = "Nom d'utilisateur ou mot de passe incorrect";
-}
-
+        // Stocker les infos utiles en session
         $_SESSION['user'] = [
-            'username' => $username
+            'id'       => $user['id'],
+            'username' => $user['username'],
+            'role'     => $user['role']
         ];
 
-        // Redirige vers la page principale après connexion
-        header("Location: vue/dashboard.php"); // ← modifie ici selon ta vue principale
+        header("Location: vue/dashboard.php");
         exit;
+
     } else {
         $error = "Nom d'utilisateur ou mot de passe incorrect";
     }
-
+}
 ?>
 
 <!DOCTYPE html>
@@ -96,10 +88,8 @@ if ($user && password_verify($password, $user['password'])) {
 
     .login-container h2 i {
         color: #2563eb;
-        margin-right: 6px;
     }
 
-    /* INPUT BOX */
     .input-box {
         position: relative;
         margin-bottom: 18px;

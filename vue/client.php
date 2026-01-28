@@ -1,262 +1,127 @@
 <?php
 include 'entete.php';
 require_once __DIR__ . '/../models/Client.php';
-// 🔹 AJOUT CLIENT
+
+$search = $_GET['q'] ?? '';
+$sql = "SELECT * FROM client";
+$params = [];
+
+if (!empty($search)) {
+    $sql .= " WHERE nom LIKE ? OR email LIKE ?";
+    $params[] = "%$search%";
+    $params[] = "%$search%";
+}
+
+$stmt = $pdo->prepare($sql);
+$stmt->execute($params);
+$clients = $stmt->fetchAll();
+
+// AJOUT CLIENT
 if (isset($_POST['add'])) {
     Client::create($_POST);
+    $_SESSION['success'] = "Client ajouté avec succès";
     header("Location: clients.php");
     exit;
 }
 
-// 🔹 MODIFICATION CLIENT
+// MODIFICATION CLIENT
 if (isset($_POST['update'])) {
     Client::update($_POST['id'], $_POST);
+    $_SESSION['success'] = "Client modifié avec succès";
     header("Location: clients.php");
     exit;
 }
 
-// 🔹 SUPPRESSION CLIENT
+// SUPPRESSION CLIENT
 if (isset($_GET['delete'])) {
     Client::delete($_GET['delete']);
+    $_SESSION['success'] = "Client supprimé";
     header("Location: clients.php");
     exit;
 }
 
-// 🔹 RÉCUPÉRER CLIENT POUR EDIT
+// CLIENT À MODIFIER
 $clientEdit = null;
 if (isset($_GET['edit'])) {
     $clientEdit = Client::find($_GET['edit']);
 }
 
-// 🔹 LISTE DES CLIENTS
+// LISTE CLIENTS
 $clients = Client::getAll();
 ?>
-<!DOCTYPE html>
-<html lang="fr">
 
-<head>
-    <meta charset="UTF-8">
-    <title>Gestion des clients</title>
-</head>
+<div class="home-content">
 
-<body>
-    <style>
-        .sidebar {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 260px;
-            height: 100vh;
-            background: #1e40af;
-            transition: all 0.4s ease;
-        }
+    <!-- ===== FORMULAIRE ===== -->
+    <div class="box">
+        <h2><?= $clientEdit ? "Modifier le client" : "Ajouter un client" ?></h2><br />
 
-        /* SIDEBAR FERMÉ */
-        .sidebar.active {
-            left: -260px;
-            /* ⬅️ disparaît complètement */
-        }
+        <?php if (isset($_SESSION['success'])): ?>
+            <p style="color:green"><?= $_SESSION['success'];
+                                    unset($_SESSION['success']); ?></p>
+        <?php endif; ?>
 
-        .page-container {
-            padding: 25px;
-        }
+        <form method="post" class="form-article">
+            <?php if ($clientEdit): ?>
+                <input type="hidden" name="id" value="<?= $clientEdit['id'] ?>">
+            <?php endif; ?>
 
-        h2 {
-            margin-bottom: 15px;
-            color: #1e293b;
-        }
+            <label>Nom</label>
+            <input type="text" name="nom" value="<?= $clientEdit['nom'] ?? '' ?>" required>
 
-        /* CARD */
-        .card {
-            background: #fff;
-            border-radius: 12px;
-            padding: 20px;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
-            margin-bottom: 30px;
-        }
+            <label>Prénom</label>
+            <input type="text" name="prenom" value="<?= $clientEdit['prenom'] ?? '' ?>" required>
 
-        /* FORM */
-        .form-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 15px;
-        }
+            <label>Téléphone</label>
+            <input type="text" name="telephone" value="<?= $clientEdit['telephone'] ?? '' ?>" required>
 
-        .form-group {
-            display: flex;
-            flex-direction: column;
-        }
+            <label>Adresse</label>
+            <input type="text" name="adresse" value="<?= $clientEdit['adresse'] ?? '' ?>" required>
 
-        .form-group label {
-            font-size: 13px;
-            color: #475569;
-            margin-bottom: 5px;
-        }
+            <button type="submit" name="<?= $clientEdit ? 'update' : 'add' ?>">
+                <?= $clientEdit ? 'Modifier' : 'Ajouter' ?>
+            </button>
+        </form>
+    </div><br />
 
-        .form-group input {
-            padding: 10px 12px;
-            border-radius: 8px;
-            border: 1px solid #cbd5e1;
-            font-size: 14px;
-        }
+    <!-- ===== TABLE CLIENTS ===== -->
+    <div class="recent-sales box">
+        <h2>Liste des clients</h2>
 
-        .form-group input:focus {
-            outline: none;
-            border-color: #2563eb;
-            box-shadow: 0 0 0 2px rgba(37, 99, 235, .15);
-        }
-
-        .form-actions {
-            margin-top: 20px;
-            text-align: right;
-        }
-
-        .btn {
-            padding: 10px 18px;
-            border-radius: 8px;
-            border: none;
-            cursor: pointer;
-            font-weight: 600;
-            font-size: 14px;
-        }
-
-        .btn-primary {
-            background: #2563eb;
-            color: #fff;
-        }
-
-        .btn-primary:hover {
-            background: #1e40af;
-        }
-
-        /* TABLE */
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 10px;
-        }
-
-        thead {
-            background: #f1f5f9;
-        }
-
-        th,
-        td {
-            padding: 12px 10px;
-            font-size: 14px;
-            text-align: left;
-            border-bottom: 1px solid #e2e8f0;
-        }
-
-        th {
-            color: #1e293b;
-        }
-
-        tbody tr:hover {
-            background: #f8fafc;
-        }
-
-        .actions a {
-            margin-right: 8px;
-            text-decoration: none;
-            font-size: 16px;
-        }
-
-        .actions a.edit {
-            color: #2563eb;
-        }
-
-        .actions a.delete {
-            color: #dc2626;
-        }
-
-        /* RESPONSIVE */
-        @media (max-width: 768px) {
-            .form-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-    </style>
-    </head>
-
-    <body>
-
-        <div class="page-container">
-
-            <!-- FORM CARD -->
-            <div class="card">
-                <h2><?= $clientEdit ? "Modifier le client" : "Ajouter un client" ?></h2>
-
-                <form method="post">
-                    <?php if ($clientEdit): ?>
-                        <input type="hidden" name="id" value="<?= $clientEdit['id'] ?>">
-                    <?php endif; ?>
-
-                    <div class="form-grid">
-                        <div class="form-group">
-                            <label>Nom</label>
-                            <input type="text" name="nom" value="<?= $clientEdit['nom'] ?? '' ?>" required>
-                        </div>
-
-                        <div class="form-group">
-                            <label>Prénom</label>
-                            <input type="text" name="prenom" value="<?= $clientEdit['prenom'] ?? '' ?>" required>
-                        </div>
-
-                        <div class="form-group">
-                            <label>Téléphone</label>
-                            <input type="text" name="telephone" value="<?= $clientEdit['telephone'] ?? '' ?>" required>
-                        </div>
-
-                        <div class="form-group">
-                            <label>Adresse</label>
-                            <input type="text" name="adresse" value="<?= $clientEdit['adresse'] ?? '' ?>" required>
-                        </div>
-                    </div>
-
-                    <div class="form-actions">
-                        <button class="btn btn-primary" type="submit"
-                            name="<?= $clientEdit ? 'update' : 'add' ?>">
-                            <?= $clientEdit ? 'Modifier' : 'Ajouter' ?>
-                        </button>
-                    </div>
-                </form>
-            </div>
-
-            <!-- TABLE CARD -->
-            <div class="card">
-                <h2>Liste des clients</h2>
-
-                <table>
-                    <thead>
+        <table>
+            <thead>
+                <tr>
+                    <th>Nom</th>
+                    <th>Prénom</th>
+                    <th>Téléphone</th>
+                    <th>Adresse</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php if ($clients): ?>
+                    <?php foreach ($clients as $c): ?>
                         <tr>
-                            <th>Nom</th>
-                            <th>Prénom</th>
-                            <th>Téléphone</th>
-                            <th>Adresse</th>
-                            <th>Actions</th>
+                            <td><?= htmlspecialchars($c['nom']) ?></td>
+                            <td><?= htmlspecialchars($c['prenom']) ?></td>
+                            <td><?= htmlspecialchars($c['telephone']) ?></td>
+                            <td><?= htmlspecialchars($c['adresse']) ?></td>
+                            <td>
+                                <a href="clients.php?edit=<?= $c['id'] ?>">✏️</a>
+                                <a href="clients.php?delete=<?= $c['id'] ?>"
+                                    onclick="return confirm('Supprimer ce client ?')">🗑️</a>
+                            </td>
                         </tr>
-                    </thead>
-                    <tbody>
-                        <?php foreach ($clients as $c): ?>
-                            <tr>
-                                <td><?= htmlspecialchars($c['nom']) ?></td>
-                                <td><?= htmlspecialchars($c['prenom']) ?></td>
-                                <td><?= htmlspecialchars($c['telephone']) ?></td>
-                                <td><?= htmlspecialchars($c['adresse']) ?></td>
-                                <td class="actions">
-                                    <a class="edit" href="clients.php?edit=<?= $c['id'] ?>">✏️</a>
-                                    <a class="delete" href="clients.php?delete=<?= $c['id'] ?>"
-                                        onclick="return confirm('Supprimer ce client ?')">🗑️</a>
-                                </td>
-                            </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
-            </div>
-            <?php include 'pied.php'; ?>
-        </div>
+                    <?php endforeach; ?>
+                <?php else: ?>
+                    <tr>
+                        <td colspan="5">Aucun client trouvé</td>
+                    </tr>
+                <?php endif; ?>
+            </tbody>
+        </table>
+    </div>
 
-    </body>
+</div>
 
-</html>
+<?php include 'pied.php'; ?>

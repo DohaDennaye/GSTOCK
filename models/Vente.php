@@ -3,10 +3,12 @@ require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/Article.php';
 require_once __DIR__ . '/Client.php';
 
-class Vente {
+class Vente
+{
 
     // 🔹 Récupérer toutes les ventes avec les noms des clients et articles
-    public static function getAll() {
+    public static function getAll()
+    {
         global $pdo;
         $sql = "
             SELECT 
@@ -28,7 +30,8 @@ class Vente {
     }
 
     // 🔹 Ajouter une vente
-    public static function create($data) {
+    public static function create($data)
+    {
         global $pdo;
         $sql = "INSERT INTO vente (id_article, id_client, quantite, prix) VALUES (?,?,?,?)";
         $stmt = $pdo->prepare($sql);
@@ -41,7 +44,8 @@ class Vente {
     }
 
     // 🔹 Mettre à jour une vente
-    public static function update($id, $data) {
+    public static function update($id, $data)
+    {
         global $pdo;
         $sql = "UPDATE vente SET id_article=?, id_client=?, quantite=?, prix=? WHERE id=?";
         $stmt = $pdo->prepare($sql);
@@ -55,14 +59,16 @@ class Vente {
     }
 
     // 🔹 Supprimer une vente
-    public static function delete($id) {
+    public static function delete($id)
+    {
         global $pdo;
         $sql = "DELETE FROM vente WHERE id=?";
         return $pdo->prepare($sql)->execute([$id]);
     }
 
     // 🔹 Récupérer une vente par ID (optionnel pour l'édition)
-    public static function find($id) {
+    public static function find($id)
+    {
         global $pdo;
         $sql = "
             SELECT 
@@ -84,5 +90,16 @@ class Vente {
         $stmt->execute([$id]);
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
+    public static function getVentesByArticleLastDays($id_article, $days)
+    {
+        global $pdo;
+        $stmt = $pdo->prepare("
+        SELECT quantite 
+        FROM vente 
+        WHERE id_article = ?
+        AND date_vente >= DATE_SUB(NOW(), INTERVAL ? DAY)
+    ");
+        $stmt->execute([$id_article, $days]);
+        return $stmt->fetchAll();
+    }
 }
-?>

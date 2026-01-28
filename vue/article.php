@@ -123,7 +123,7 @@ $articles = Article::getAll();
         </div>
     </div>
 
-    <h2>Liste des articles</h2>
+    <h2>Liste des articles</h2
     <table border="1" cellpadding="10" cellspacing="0">
         <tr>
             <th>ID</th>
@@ -159,4 +159,4 @@ $articles = Article::getAll();
     </table>
 </div>
 
-<?php include 'pied.php'; ?>
+<?php include 'pied.php'; ?>    

@@ -12,16 +12,32 @@ body {
   background: #f5f5f5;
 }
 
+
+
+/* NAVBAR */
+.home-section nav {
+  position: fixed;
+  top: 0;
+  left: 260px;
+  width: calc(100% - 260px);
+  transition: all 0.4s ease;
+}
+
+.home-content {
+  margin-top: 80px;
+}
+
 /* =====================
-   SIDEBAR
+   SIDEBAR MODERNE
 ===================== */
 .sidebar {
-  position: fixed; /* 🔴 OBLIGATOIRE */
+  position: fixed;
   top: 0;
   left: 0;
   width: 260px;
   height: 100vh;
-  background: #11101d;
+  background: linear-gradient(180deg, #0a2558, #071b3d);
+  padding: 20px 15px;
   transition: all 0.4s ease;
   z-index: 100;
 }
@@ -32,42 +48,70 @@ body {
 
 /* LOGO */
 .sidebar .logo-details {
-  height: 70px;
   display: flex;
   align-items: center;
-  padding: 0 20px;
+  gap: 10px;
+  height: 60px;
+  margin-bottom: 20px;
+}
+
+.sidebar .logo-details i {
+  font-size: 28px;
+  color: #fff;
 }
 
 .sidebar .logo-details .logo_name {
   color: #fff;
-  font-size: 20px;
+  font-size: 22px;
   font-weight: 600;
 }
 
 /* LINKS */
-.sidebar ul {
-  margin-top: 20px;
-}
-
-.sidebar ul li {
+.sidebar .nav-links {
   list-style: none;
-  height: 50px;
 }
 
-.sidebar ul li a {
-  color: #fff;
+.sidebar .nav-links li {
+  margin: 8px 0;
+}
+
+.sidebar .nav-links li a {
   display: flex;
   align-items: center;
-  height: 100%;
-  padding: 0 15px;
+  gap: 12px;
+  color: #cfd8ff;
+  padding: 12px 14px;
+  border-radius: 10px;
   text-decoration: none;
-  border-radius: 12px;
-  transition: 0.3s;
+  transition: all 0.3s ease;
+  font-size: 15px;
 }
 
-.sidebar ul li a:hover {
-  background: #fff;
-  color: #11101d;
+.sidebar .nav-links li a i {
+  font-size: 20px;
+}
+
+/* Hover */
+.sidebar .nav-links li a:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  transform: translateX(4px);
+}
+
+/* Active */
+.sidebar .nav-links li a.active {
+  background: #ffffff;
+  color: #0a2558;
+  font-weight: 600;
+}
+
+.sidebar .nav-links li a.active i {
+  color: #0a2558;
+}
+
+/* Logout */
+.sidebar .log_out {
+  margin-top: 30px;
 }
 
 /* =====================
@@ -75,49 +119,104 @@ body {
 ===================== */
 .home-section {
   position: relative;
-  margin-left: 260px;
   min-height: 100vh;
+  width: calc(100% - 260px);
+  left: 260px;
   background: #f5f5f5;
-  transition: all 0.4s ease;
+  transition: all 0.5s ease;
 }
 
-.sidebar.active ~ .home-section {
-  margin-left: 0;
+/* Quand sidebar fermée */
+.sidebar.active~.home-section {
+  width: 100%;
+  left: 0;
 }
 
 /* =====================
-   NAVBAR
+   NAVBAR MODERNE
 ===================== */
 .home-section nav {
   position: fixed;
   top: 0;
   left: 260px;
-  height: 70px;
   width: calc(100% - 260px);
-  background: #fff;
+  height: 70px;
+  background: #ffffff;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 20px;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+  padding: 0 25px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
   transition: all 0.4s ease;
   z-index: 90;
 }
 
-.sidebar.active ~ .home-section nav {
+/* Quand sidebar fermée */
+.sidebar.active~.home-section nav {
   left: 0;
   width: 100%;
 }
 
-/* =====================
-   HOME CONTENT (IMPORTANT)
-===================== */
-.home-section .home-content {
-  padding: 90px 25px 40px; /* 🔴 70px nav + marge */
+/* Bouton menu */
+.sidebar-button {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 22px;
+  cursor: pointer;
+}
+
+.sidebar-button i {
+  font-size: 26px;
+  color: #0a2558;
+}
+
+/* SEARCH */
+.search-box {
+  position: relative;
+  width: 260px;
+}
+
+.search-box input {
+  width: 100%;
+  padding: 8px 14px 8px 36px;
+  border-radius: 20px;
+  border: 1px solid #ddd;
+  outline: none;
+  font-size: 14px;
+}
+
+.search-box i {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #777;
+}
+
+/* PROFIL */
+.profile-details {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #f4f6fb;
+  padding: 6px 14px;
+  border-radius: 20px;
+  cursor: pointer;
+}
+
+.profile-details .admin_name {
+  font-weight: 500;
+  color: #333;
+}
+
+.profile-details i {
+  font-size: 18px;
+  color: #555;
 }
 
 /* =====================
-   BOXES
+   BOXES / DASHBOARD
 ===================== */
 .overview-boxes {
   display: grid;
@@ -129,7 +228,7 @@ body {
   background: #fff;
   padding: 20px;
   border-radius: 12px;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
 }
 
 /* =====================
@@ -139,6 +238,10 @@ body {
   display: flex;
   flex-direction: column;
   gap: 10px;
+}
+
+.form-article label {
+  font-weight: 500;
 }
 
 .form-article input,
@@ -151,11 +254,15 @@ body {
 .form-article button {
   margin-top: 10px;
   padding: 10px;
-  border-radius: 6px;
   border: none;
-  background: #11101d;
+  border-radius: 6px;
+  background: linear-gradient(180deg, #0a2558, #071b3d);
   color: #fff;
   cursor: pointer;
+}
+
+.form-article button:hover {
+  background: linear-gradient(180deg, #0a2558, #071b3d);
 }
 
 /* =====================
@@ -171,8 +278,8 @@ table {
 table th,
 table td {
   padding: 10px;
-  border-bottom: 1px solid #ddd;
   text-align: center;
+  border-bottom: 1px solid #ddd;
 }
 
 table th {
@@ -189,11 +296,23 @@ table th {
   }
 
   .home-section {
-    margin-left: 0;
+    width: 100%;
+    left: 0;
   }
 
   .home-section nav {
     left: 0;
     width: 100%;
   }
+}
+.ai-card{
+    border-left:6px solid #6366f1;
+}
+
+.ai-result{
+    margin-top:20px;
+    background:#f8fafc;
+    padding:15px;
+    border-radius:10px;
+    font-size:14px;
 }
