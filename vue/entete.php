@@ -9,7 +9,7 @@ $currentPage = basename($_SERVER['PHP_SELF']);
 
 <head>
     <meta charset="UTF-8" />
-    <title>Admin Dashboard</title>
+    <title>GStock</title>
     <link rel="stylesheet" href="../public/css/style.css" />
     <!-- Boxicons CDN Link -->
     <link href="https://unpkg.com/boxicons@2.0.7/css/boxicons.min.css" rel="stylesheet" />
